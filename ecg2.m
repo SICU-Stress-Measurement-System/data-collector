@@ -1,18 +1,22 @@
+
+
+% Establish constant properties
+properties.MinPeakHeight = 800;
+
 % Sampling rate
 Fs_ecg = 2538;
 Fs_eeg = 250;
 interval = 10;
 
-%Patient Baseline HR
+% Patient Baseline HR
 HR_baseline = 60;
 
 fileID = fopen('ecgdata.txt');
 eee = fscanf(fileID, '%i\n');
 ecgdata = eee(1:318000);
 
-%%ECG Data Processing
-%Break up by monitoring interval and compute HR in each
-%interval
+%% ECG Data Processing
+% Break up by monitoring interval and compute HR in each interval
 interval_index = 1;
 time = (1:length(ecgdata))*(1/Fs_ecg);
 for i = 1:interval*Fs_ecg:length(ecgdata)
@@ -25,24 +29,22 @@ for i = 1:interval*Fs_ecg:length(ecgdata)
         interval_data = ecgdata(i:end);
     end
     time_intervals(interval_index) = time(interval_last);
-    %Compute number of heart beats in this interval
-    ecgnext = interval_data(2:end);
-    ecgnext = [ecgnext; 0];
-    beats = find(ecgnext > 800 & interval_data <= 800);
-    numBeats = length(beats);
-    %Compute Average HR for this interval
+    
+    numBeats = nheartbeats(interval_data, properties);
+    
+    % Compute Average HR for this interval
     HR_intervals(interval_index) = (numBeats/interval)*60;
     interval_index = interval_index+1;
 end
 HRvalue = mean(HR_intervals);
-%Compute HR Rate of Change across intervals
+% Compute HR Rate of Change across intervals
 HRRoC_intervals = (HR_intervals(2:end)-HR_intervals(1:end-1))/interval;
 HRRoC_intervals = [0 HRRoC_intervals];
-%Displayed value represents average Rate of Change across the entire time
-%period
+% Displayed value represents average Rate of Change across the entire time
+% period
 HRRoCvalue = mean(HRRoC_intervals);
 
-%Calculate HR Variability
+% Calculate HR Variability
 NNIntervals = [];
 NNindex = 1;
 PCvalue = 0;
@@ -64,6 +66,6 @@ for i = 1:length(RRlocs) - 1
 end
 SDNNvalue = std(NNIntervals);    
 
-%Compute Stress Index
+% Compute Stress Index
 SI_intervals = ((HR_intervals/HR_baseline).*1.1.^HRRoC_intervals*1.05.^PCvalue)/SDNNvalue;
 SIcardvalue = mean(SI_intervals)
